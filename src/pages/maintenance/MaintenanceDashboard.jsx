@@ -120,13 +120,19 @@ const MaintenanceDashboard = () => {
         </div>
         <div className="flex space-x-3">
           <PermissionGate permission="add_workorder">
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
+            <button 
+              onClick={() => navigate('/maintenance/work-orders')}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+            >
               <Plus className="h-5 w-5 mr-2" />
               Nueva Orden
             </button>
           </PermissionGate>
           <PermissionGate permission="add_asset">
-            <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center">
+            <button 
+              onClick={() => navigate('/maintenance/assets')}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center"
+            >
               <Plus className="h-5 w-5 mr-2" />
               Nuevo Activo
             </button>

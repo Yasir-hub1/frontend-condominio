@@ -93,13 +93,6 @@ export const financeService = {
   generateCharges: (data) => api.post('/unit-charges/generate_charges/', data),
   applyInterest: (id) => api.post(`/unit-charges/${id}/apply_interest/`),
   
-  // Payments
-  getPayments: (params) => api.get('/payments/', { params }),
-  getPayment: (id) => api.get(`/payments/${id}/`),
-  createPayment: (data) => api.post('/payments/', data),
-  updatePayment: (id, data) => api.put(`/payments/${id}/`, data),
-  deletePayment: (id) => api.delete(`/payments/${id}/`),
-  
   // Interest Rates
   getInterestRates: (params) => api.get('/interest-rates/', { params }),
   getInterestRate: (id) => api.get(`/interest-rates/${id}/`),
@@ -260,8 +253,22 @@ export const securityService = {
   // Visitors
   getVisitors: (params) => api.get('/visitors/', { params }),
   getVisitor: (id) => api.get(`/visitors/${id}/`),
-  createVisitor: (data) => api.post('/visitors/', data),
-  updateVisitor: (id, data) => api.put(`/visitors/${id}/`, data),
+  createVisitor: (data) => {
+    const config = data instanceof FormData ? {
+      headers: {
+        'Content-Type': undefined, // Let axios set it automatically for FormData
+      },
+    } : {};
+    return api.post('/visitors/', data, config);
+  },
+  updateVisitor: (id, data) => {
+    const config = data instanceof FormData ? {
+      headers: {
+        'Content-Type': undefined, // Let axios set it automatically for FormData
+      },
+    } : {};
+    return api.put(`/visitors/${id}/`, data, config);
+  },
   deleteVisitor: (id) => api.delete(`/visitors/${id}/`),
   
   // Access Authorizations
@@ -341,11 +348,28 @@ export const reportsService = {
   // Dashboard Reports
   getDashboardOverview: () => api.get('/reports/dashboard/overview/'),
   
-  // Legacy reports
-  getFinanceMorosity: (params) => api.get('/reports/finance/morosity/', { params }),
-  getAccessTrends: (params) => api.get('/reports/security/access-trends/', { params }),
-  getAmenitiesUsage: (params) => api.get('/reports/amenities/usage/', { params }),
-  getMaintenanceSummary: (params) => api.get('/reports/maintenance/summary/', { params })
+  // Reports - Dashboard KPIs
+  getDashboardKPIs: () => api.get('/reports/reports/dashboard_kpis/'),
+  
+  // Reports - Financial
+  getAgingDebt: (params) => api.get('/reports/reports/aging_debt/', { params }),
+  getCollectionRate: (params) => api.get('/reports/reports/collection_rate/', { params }),
+  
+  // Reports - Security
+  getAccessStatistics: (params) => api.get('/reports/reports/access_statistics/', { params }),
+  
+  // Reports - Amenities
+  getAmenitiesUsage: (params) => api.get('/reports/reports/amenities_usage/', { params }),
+  
+  // Reports - Maintenance
+  getMaintenanceSummary: (params) => api.get('/reports/reports/maintenance_summary/', { params }),
+  
+  // Reports - Export
+  exportReport: (params) => api.get('/reports/reports/export_report/', { params }),
+  
+  // Legacy reports (for backward compatibility)
+  getFinanceMorosity: (params) => api.get('/reports/reports/aging_debt/', { params }),
+  getAccessTrends: (params) => api.get('/reports/reports/access_statistics/', { params })
 };
 
 // Dashboard Services

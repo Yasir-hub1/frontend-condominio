@@ -122,13 +122,19 @@ const SecurityDashboard = () => {
         </div>
         <div className="flex space-x-3">
           <PermissionGate permission="add_visitor">
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
+            <button 
+              onClick={() => navigate('/security/visitors')}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+            >
               <Plus className="h-5 w-5 mr-2" />
               Nuevo Visitante
             </button>
           </PermissionGate>
           <PermissionGate permission="add_accessauthorization">
-            <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center">
+            <button 
+              onClick={() => navigate('/security/authorizations')}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center"
+            >
               <Plus className="h-5 w-5 mr-2" />
               Nueva Autorización
             </button>

@@ -12,13 +12,34 @@ import {
   Clock,
   Download,
   Eye,
-  Filter
+  Filter,
+  FileSpreadsheet,
+  Activity,
+  AlertTriangle,
+  CheckCircle
 } from 'lucide-react';
 
 const ReportsDashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [kpis, setKpis] = useState(null);
   const { canPerformAction } = usePermissions();
+
+  useEffect(() => {
+    fetchKPIs();
+  }, []);
+
+  const fetchKPIs = async () => {
+    try {
+      setLoading(true);
+      const response = await reportsService.getDashboardKPIs();
+      setKpis(response.data);
+    } catch (error) {
+      console.error('Error fetching KPIs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const reportCategories = [
     {
@@ -27,24 +48,41 @@ const ReportsDashboard = () => {
       color: 'green',
       bgColor: 'bg-green-50',
       textColor: 'text-green-600',
+      route: '/reports/financial',
+      kpis: kpis?.financial ? [
+        {
+          label: 'Ingresos del Mes',
+          value: `$${kpis.financial.monthly_income?.toLocaleString() || '0'}`,
+          trend: '+12%',
+          trendColor: 'text-green-600'
+        },
+        {
+          label: 'Tasa de Cobranza',
+          value: `${kpis.financial.collection_rate || 0}%`,
+          trend: '+5%',
+          trendColor: 'text-green-600'
+        },
+        {
+          label: 'Deuda Total',
+          value: `$${kpis.financial.total_debt?.toLocaleString() || '0'}`,
+          trend: '-8%',
+          trendColor: 'text-red-600'
+        }
+      ] : [],
       reports: [
         {
           name: 'Envejecimiento de Deuda',
           description: 'Análisis de deudas por antigüedad',
-          endpoint: 'getAgingDebt',
-          icon: TrendingUp
+          endpoint: 'aging_debt',
+          icon: TrendingUp,
+          color: 'red'
         },
         {
           name: 'Tasa de Cobranza',
           description: 'Porcentaje de cobranza por período',
-          endpoint: 'getCollectionRate',
-          icon: BarChart3
-        },
-        {
-          name: 'Top Deudores',
-          description: 'Lista de mayores deudores',
-          endpoint: 'getTopDebtors',
-          icon: Users
+          endpoint: 'collection_rate',
+          icon: BarChart3,
+          color: 'green'
         }
       ]
     },
@@ -54,18 +92,34 @@ const ReportsDashboard = () => {
       color: 'blue',
       bgColor: 'bg-blue-50',
       textColor: 'text-blue-600',
+      route: '/reports/security',
+      kpis: kpis?.security ? [
+        {
+          label: 'Accesos Hoy',
+          value: kpis.security.today_accesses?.toString() || '0',
+          trend: '+3%',
+          trendColor: 'text-green-600'
+        },
+        {
+          label: 'Incidentes Hoy',
+          value: kpis.security.today_incidents?.toString() || '0',
+          trend: kpis.security.today_incidents > 0 ? '+1' : '0',
+          trendColor: kpis.security.today_incidents > 0 ? 'text-red-600' : 'text-green-600'
+        },
+        {
+          label: 'Visitantes Activos',
+          value: kpis.security.active_visitors?.toString() || '0',
+          trend: '+2%',
+          trendColor: 'text-green-600'
+        }
+      ] : [],
       reports: [
         {
           name: 'Estadísticas de Acceso',
           description: 'Análisis de entradas y salidas',
-          endpoint: 'getAccessStatistics',
-          icon: BarChart3
-        },
-        {
-          name: 'Resumen de Incidentes',
-          description: 'Reporte de incidentes de seguridad',
-          endpoint: 'getIncidentSummary',
-          icon: Shield
+          endpoint: 'access_statistics',
+          icon: BarChart3,
+          color: 'blue'
         }
       ]
     },
@@ -75,18 +129,34 @@ const ReportsDashboard = () => {
       color: 'purple',
       bgColor: 'bg-purple-50',
       textColor: 'text-purple-600',
-      reports: [
+      route: '/reports/amenities',
+      kpis: kpis?.amenities ? [
         {
-          name: 'Estadísticas de Uso',
-          description: 'Uso de amenidades por período',
-          endpoint: 'getUsageStatistics',
-          icon: BarChart3
+          label: 'Reservas Hoy',
+          value: kpis.amenities.today_reservations?.toString() || '0',
+          trend: '+15%',
+          trendColor: 'text-green-600'
         },
         {
-          name: 'Tasa de Ocupación',
-          description: 'Ocupación de amenidades',
-          endpoint: 'getOccupancyRate',
-          icon: TrendingUp
+          label: 'Tasa de Ocupación',
+          value: `${kpis.amenities.occupancy_rate || 0}%`,
+          trend: '+8%',
+          trendColor: 'text-green-600'
+        },
+        {
+          label: 'Amenidad Más Usada',
+          value: kpis.amenities.most_used_amenity || 'N/A',
+          trend: '',
+          trendColor: 'text-gray-600'
+        }
+      ] : [],
+      reports: [
+        {
+          name: 'Uso de Amenidades',
+          description: 'Estadísticas de uso y ocupación',
+          endpoint: 'amenities_usage',
+          icon: BarChart3,
+          color: 'purple'
         }
       ]
     },
@@ -96,18 +166,34 @@ const ReportsDashboard = () => {
       color: 'orange',
       bgColor: 'bg-orange-50',
       textColor: 'text-orange-600',
-      reports: [
+      route: '/reports/maintenance',
+      kpis: kpis?.maintenance ? [
         {
-          name: 'Cumplimiento Preventivo',
-          description: 'Tareas de mantenimiento completadas',
-          endpoint: 'getPreventiveCompliance',
-          icon: Clock
+          label: 'Órdenes Abiertas',
+          value: kpis.maintenance.open_orders?.toString() || '0',
+          trend: '-5%',
+          trendColor: 'text-green-600'
         },
         {
-          name: 'Análisis de Costos',
-          description: 'Costos de mantenimiento por categoría',
-          endpoint: 'getCostAnalysis',
-          icon: DollarSign
+          label: 'Completadas Hoy',
+          value: kpis.maintenance.completed_today?.toString() || '0',
+          trend: '+10%',
+          trendColor: 'text-green-600'
+        },
+        {
+          label: 'Costo del Mes',
+          value: `$${kpis.maintenance.monthly_cost?.toLocaleString() || '0'}`,
+          trend: '-3%',
+          trendColor: 'text-green-600'
+        }
+      ] : [],
+      reports: [
+        {
+          name: 'Resumen de Mantenimiento',
+          description: 'Análisis de órdenes y costos',
+          endpoint: 'maintenance_summary',
+          icon: Clock,
+          color: 'orange'
         }
       ]
     }
@@ -116,7 +202,12 @@ const ReportsDashboard = () => {
   const handleGenerateReport = async (endpoint, reportName) => {
     try {
       setLoading(true);
-      const response = await reportsService[endpoint]({});
+      const params = {
+        start_date: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0],
+        end_date: new Date().toISOString().split('T')[0]
+      };
+      
+      const response = await reportsService[endpoint](params);
       console.log(`${reportName} report:`, response.data);
       // Aquí podrías mostrar el reporte en un modal o nueva página
     } catch (error) {
@@ -129,7 +220,13 @@ const ReportsDashboard = () => {
   const handleExportReport = async (endpoint, reportName) => {
     try {
       setLoading(true);
-      const response = await reportsService[endpoint]({ format: 'csv' });
+      const params = {
+        start_date: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0],
+        end_date: new Date().toISOString().split('T')[0],
+        format: 'csv'
+      };
+      
+      const response = await reportsService.exportReport(params);
       // Aquí podrías descargar el archivo CSV
       console.log(`${reportName} CSV:`, response.data);
     } catch (error) {
@@ -139,7 +236,7 @@ const ReportsDashboard = () => {
     }
   };
 
-  if (loading) {
+  if (loading && !kpis) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -149,65 +246,164 @@ const ReportsDashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard de Reportes</h1>
-          <p className="text-gray-600">Genera y exporta reportes de todos los módulos del sistema</p>
+          <p className="text-gray-600">KPIs y reportes de todos los módulos del sistema</p>
         </div>
         <div className="flex space-x-3">
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
-            <Download className="h-5 w-5 mr-2" />
-            Exportar Todos
+          <button 
+            onClick={() => navigate('/reports')}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+          >
+            <Filter className="h-5 w-5 mr-2" />
+            Reportes Avanzados
           </button>
         </div>
       </div>
+
+      {/* General KPIs */}
+      {kpis?.general && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center">
+              <div className="p-3 rounded-lg bg-blue-100">
+                <Users className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-medium text-gray-900">Total Unidades</h3>
+                <p className="text-3xl font-bold text-blue-600">{kpis.general.total_units || 0}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center">
+              <div className="p-3 rounded-lg bg-green-100">
+                <Users className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-medium text-gray-900">Total Residentes</h3>
+                <p className="text-3xl font-bold text-green-600">{kpis.general.total_residents || 0}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center">
+              <div className="p-3 rounded-lg bg-yellow-100">
+                <Activity className="h-6 w-6 text-yellow-600" />
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-medium text-gray-900">Satisfacción</h3>
+                <p className="text-3xl font-bold text-yellow-600">{kpis.general.avg_satisfaction || 0}/5</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center">
+              <div className="p-3 rounded-lg bg-purple-100">
+                <CheckCircle className="h-6 w-6 text-purple-600" />
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-medium text-gray-900">Uptime</h3>
+                <p className="text-3xl font-bold text-purple-600">{kpis.general.system_uptime || 0}%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Report Categories */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {reportCategories.map((category, categoryIndex) => {
           const CategoryIcon = category.icon;
           return (
-            <div key={categoryIndex} className="bg-white shadow rounded-lg p-6">
-              <div className="flex items-center mb-4">
-                <div className={`${category.bgColor} p-3 rounded-lg`}>
-                  <CategoryIcon className={`h-6 w-6 ${category.textColor}`} />
+            <div key={categoryIndex} className="bg-white shadow rounded-lg">
+              {/* Category Header */}
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className={`${category.bgColor} p-3 rounded-lg`}>
+                      <CategoryIcon className={`h-6 w-6 ${category.textColor}`} />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-lg font-semibold text-gray-900">{category.title}</h3>
+                      <p className="text-sm text-gray-500">KPIs y reportes disponibles</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => navigate('/reports')}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  >
+                    Ver Todos
+                  </button>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 ml-3">{category.title}</h3>
               </div>
               
-              <div className="space-y-3">
-                {category.reports.map((report, reportIndex) => {
-                  const ReportIcon = report.icon;
-                  return (
-                    <div key={reportIndex} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <ReportIcon className="h-5 w-5 text-gray-400 mr-3" />
-                          <div>
-                            <h4 className="font-medium text-gray-900">{report.name}</h4>
-                            <p className="text-sm text-gray-500">{report.description}</p>
+              {/* KPIs */}
+              {category.kpis.length > 0 && (
+                <div className="p-6 border-b border-gray-200">
+                  <h4 className="text-sm font-medium text-gray-900 mb-3">Indicadores Clave</h4>
+                  <div className="grid grid-cols-3 gap-4">
+                    {category.kpis.map((kpi, kpiIndex) => (
+                      <div key={kpiIndex} className="text-center">
+                        <p className="text-2xl font-bold text-gray-900">{kpi.value}</p>
+                        <p className="text-xs text-gray-500">{kpi.label}</p>
+                        {kpi.trend && (
+                          <p className={`text-xs ${kpi.trendColor}`}>{kpi.trend}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Reports */}
+              <div className="p-6">
+                <h4 className="text-sm font-medium text-gray-900 mb-3">Reportes Disponibles</h4>
+                <div className="space-y-3">
+                  {category.reports.map((report, reportIndex) => {
+                    const ReportIcon = report.icon;
+                    return (
+                      <div key={reportIndex} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <ReportIcon className={`h-5 w-5 text-${report.color}-600 mr-3`} />
+                            <div>
+                              <h5 className="font-medium text-gray-900">{report.name}</h5>
+                              <p className="text-sm text-gray-500">{report.description}</p>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleGenerateReport(report.endpoint, report.name)}
+                              className="text-blue-600 hover:text-blue-800 p-1"
+                              title="Ver reporte"
+                              disabled={loading}
+                            >
+                              {loading ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleExportReport(report.endpoint, report.name)}
+                              className="text-green-600 hover:text-green-800 p-1"
+                              title="Exportar Excel"
+                              disabled={loading}
+                            >
+                              <FileSpreadsheet className="h-4 w-4" />
+                            </button>
                           </div>
                         </div>
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleGenerateReport(report.endpoint, report.name)}
-                            className="text-blue-600 hover:text-blue-800 p-1"
-                            title="Ver reporte"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleExportReport(report.endpoint, report.name)}
-                            className="text-green-600 hover:text-green-800 p-1"
-                            title="Exportar CSV"
-                          >
-                            <Download className="h-4 w-4" />
-                          </button>
-                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
           );
@@ -218,22 +414,31 @@ const ReportsDashboard = () => {
       <div className="bg-white shadow rounded-lg p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">Acciones Rápidas</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left">
+          <button 
+            onClick={() => navigate('/reports')}
+            className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left"
+          >
             <BarChart3 className="h-8 w-8 text-blue-600 mb-2" />
-            <h4 className="font-medium text-gray-900">Reporte Ejecutivo</h4>
-            <p className="text-sm text-gray-500">Resumen general del condominio</p>
-          </button>
-          
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left">
-            <Filter className="h-8 w-8 text-green-600 mb-2" />
             <h4 className="font-medium text-gray-900">Reportes Personalizados</h4>
             <p className="text-sm text-gray-500">Crea reportes con filtros específicos</p>
           </button>
           
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left">
-            <Download className="h-8 w-8 text-purple-600 mb-2" />
+          <button 
+            onClick={() => navigate('/reports')}
+            className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left"
+          >
+            <Download className="h-8 w-8 text-green-600 mb-2" />
             <h4 className="font-medium text-gray-900">Exportar Datos</h4>
             <p className="text-sm text-gray-500">Exporta todos los datos del sistema</p>
+          </button>
+          
+          <button 
+            onClick={() => navigate('/reports')}
+            className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left"
+          >
+            <Activity className="h-8 w-8 text-purple-600 mb-2" />
+            <h4 className="font-medium text-gray-900">Dashboard Ejecutivo</h4>
+            <p className="text-sm text-gray-500">Resumen general del condominio</p>
           </button>
         </div>
       </div>

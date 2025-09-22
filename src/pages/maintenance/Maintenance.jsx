@@ -16,13 +16,21 @@ const Maintenance = () => {
     title: '',
     description: '',
     priority: 'medium',
-    status: 'pending',
+    status: 'open',
     assigned_to: '',
     estimated_cost: '',
     actual_cost: '',
     work_order: '',
     cost_type: 'labor',
-    amount: ''
+    amount: '',
+    name: '',
+    contact_person: '',
+    phone: '',
+    email: '',
+    address: '',
+    category: 'other',
+    services: '',
+    notes: ''
   });
 
   useEffect(() => {
@@ -32,13 +40,13 @@ const Maintenance = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [workOrdersRes, providersRes, costsRes] = await Promise.all([
+      const [workOrdersRes, suppliersRes, costsRes] = await Promise.all([
         maintenanceService.getWorkOrders(),
-        maintenanceService.getProviders(),
+        maintenanceService.getSuppliers(),
         maintenanceService.getWorkOrderCosts()
       ]);
       setWorkOrders(workOrdersRes.data.results);
-      setProviders(providersRes.data.results);
+      setProviders(suppliersRes.data.results);
       setCosts(costsRes.data.results);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -51,22 +59,60 @@ const Maintenance = () => {
     e.preventDefault();
     try {
       if (activeTab === 'work-orders') {
+        // Preparar datos para work order
+        const workOrderData = {
+          title: formData.title,
+          description: formData.description || '',
+          work_type: 'corrective', // Valor por defecto
+          priority: formData.priority,
+          status: formData.status,
+          location: 'Lobby Principal', // Valor por defecto
+          estimated_hours: formData.estimated_cost ? parseFloat(formData.estimated_cost) : null,
+          actual_hours: formData.actual_cost ? parseFloat(formData.actual_cost) : null,
+          notes: ''
+        };
+        
         if (editingItem) {
-          await maintenanceService.updateWorkOrder(editingItem.id, formData);
+          await maintenanceService.updateWorkOrder(editingItem.id, workOrderData);
         } else {
-          await maintenanceService.createWorkOrder(formData);
+          await maintenanceService.createWorkOrder(workOrderData);
         }
       } else if (activeTab === 'providers') {
+        // Preparar datos para supplier
+        const supplierData = {
+          name: formData.name,
+          contact_person: formData.contact_person || '',
+          phone: formData.phone || '',
+          email: formData.email || '',
+          address: formData.address || '',
+          category: formData.category,
+          specialties: formData.description || '',
+          services: formData.services || '',
+          notes: formData.notes || '',
+          rating: 5,
+          is_active: true
+        };
+        
         if (editingItem) {
-          await maintenanceService.updateProvider(editingItem.id, formData);
+          await maintenanceService.updateSupplier(editingItem.id, supplierData);
         } else {
-          await maintenanceService.createProvider(formData);
+          await maintenanceService.createSupplier(supplierData);
         }
       } else {
+        // Preparar datos para work order cost
+        const costData = {
+          work_order: formData.work_order ? parseInt(formData.work_order) : null,
+          cost_type: formData.cost_type,
+          description: formData.title,
+          quantity: 1,
+          unit_price: formData.amount ? parseFloat(formData.amount) : 0,
+          total_amount: formData.amount ? parseFloat(formData.amount) : 0
+        };
+        
         if (editingItem) {
-          await maintenanceService.updateWorkOrderCost(editingItem.id, formData);
+          await maintenanceService.updateWorkOrderCost(editingItem.id, costData);
         } else {
-          await maintenanceService.createWorkOrderCost(formData);
+          await maintenanceService.createWorkOrderCost(costData);
         }
       }
       fetchData();
@@ -80,23 +126,66 @@ const Maintenance = () => {
 
   const handleEdit = (item) => {
     setEditingItem(item);
-    setFormData({
-      title: item.title || '',
-      description: item.description || '',
-      priority: item.priority || 'medium',
-      status: item.status || 'pending',
-      assigned_to: item.assigned_to || '',
-      estimated_cost: item.estimated_cost || '',
-      actual_cost: item.actual_cost || '',
-      work_order: item.work_order || '',
-      cost_type: item.cost_type || 'labor',
-      amount: item.amount || '',
-      name: item.name || '',
-      contact_person: item.contact_person || '',
-      phone: item.phone || '',
-      email: item.email || '',
-      address: item.address || ''
-    });
+    
+    if (activeTab === 'work-orders') {
+      setFormData({
+        title: item.title || '',
+        description: item.description || '',
+        priority: item.priority || 'medium',
+        status: item.status || 'open',
+        assigned_to: item.assigned_to || '',
+        estimated_cost: item.estimated_hours || '',
+        actual_cost: item.actual_hours || '',
+        work_order: '',
+        cost_type: 'labor',
+        amount: '',
+        name: '',
+        contact_person: '',
+        phone: '',
+        email: '',
+        address: ''
+      });
+    } else if (activeTab === 'providers') {
+      setFormData({
+        title: item.name || '',
+        description: item.specialties || '',
+        priority: 'medium',
+        status: 'open',
+        assigned_to: '',
+        estimated_cost: '',
+        actual_cost: '',
+        work_order: '',
+        cost_type: 'labor',
+        amount: '',
+        name: item.name || '',
+        contact_person: item.contact_person || '',
+        phone: item.phone || '',
+        email: item.email || '',
+        address: item.address || '',
+        category: item.category || 'other',
+        services: item.services || '',
+        notes: item.notes || ''
+      });
+    } else if (activeTab === 'costs') {
+      setFormData({
+        title: item.description || '',
+        description: item.description || '',
+        priority: 'medium',
+        status: 'open',
+        assigned_to: '',
+        estimated_cost: '',
+        actual_cost: '',
+        work_order: item.work_order || '',
+        cost_type: item.cost_type || 'labor',
+        amount: item.total_amount || '',
+        name: '',
+        contact_person: '',
+        phone: '',
+        email: '',
+        address: ''
+      });
+    }
+    
     setShowModal(true);
   };
 
@@ -106,7 +195,7 @@ const Maintenance = () => {
         if (activeTab === 'work-orders') {
           await maintenanceService.deleteWorkOrder(id);
         } else if (activeTab === 'providers') {
-          await maintenanceService.deleteProvider(id);
+          await maintenanceService.deleteSupplier(id);
         } else {
           await maintenanceService.deleteWorkOrderCost(id);
         }
@@ -122,7 +211,7 @@ const Maintenance = () => {
       title: '',
       description: '',
       priority: 'medium',
-      status: 'pending',
+      status: 'open',
       assigned_to: '',
       estimated_cost: '',
       actual_cost: '',
@@ -133,7 +222,10 @@ const Maintenance = () => {
       contact_person: '',
       phone: '',
       email: '',
-      address: ''
+      address: '',
+      category: 'other',
+      services: '',
+      notes: ''
     });
   };
 
@@ -146,9 +238,26 @@ const Maintenance = () => {
   };
 
   const filteredData = getCurrentData().filter(item => {
-    const matchesSearch = item.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    let matchesSearch = false;
+    
+    if (activeTab === 'work-orders') {
+      matchesSearch = item.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                     item.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    } else if (activeTab === 'providers') {
+      matchesSearch = item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                     item.contact_person?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                     item.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                     item.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                     item.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                     item.specialties?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                     item.services?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                     item.notes?.toLowerCase().includes(searchTerm.toLowerCase());
+    } else if (activeTab === 'costs') {
+      matchesSearch = item.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                     item.cost_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                     item.work_order_title?.toLowerCase().includes(searchTerm.toLowerCase());
+    }
+    
     const matchesStatus = !statusFilter || item.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -175,8 +284,12 @@ const Maintenance = () => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-800';
       case 'in_progress': return 'bg-blue-100 text-blue-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'open': return 'bg-yellow-100 text-yellow-800';
+      case 'assigned': return 'bg-blue-100 text-blue-800';
+      case 'pending_parts': return 'bg-orange-100 text-orange-800';
+      case 'pending_approval': return 'bg-purple-100 text-purple-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'closed': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -185,8 +298,12 @@ const Maintenance = () => {
     switch (status) {
       case 'completed': return 'Completada';
       case 'in_progress': return 'En Progreso';
-      case 'pending': return 'Pendiente';
+      case 'open': return 'Abierta';
+      case 'assigned': return 'Asignada';
+      case 'pending_parts': return 'Pendiente Repuestos';
+      case 'pending_approval': return 'Pendiente Aprobación';
       case 'cancelled': return 'Cancelada';
+      case 'closed': return 'Cerrada';
       default: return status;
     }
   };
@@ -266,10 +383,14 @@ const Maintenance = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Todos los estados</option>
-                <option value="pending">Pendientes</option>
+                <option value="open">Abiertas</option>
+                <option value="assigned">Asignadas</option>
                 <option value="in_progress">En Progreso</option>
+                <option value="pending_parts">Pendiente Repuestos</option>
+                <option value="pending_approval">Pendiente Aprobación</option>
                 <option value="completed">Completadas</option>
                 <option value="cancelled">Canceladas</option>
+                <option value="closed">Cerradas</option>
               </select>
             </div>
           )}
@@ -292,7 +413,11 @@ const Maintenance = () => {
                   )}
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-lg font-medium text-gray-900">{item.title || item.name}</h3>
+                  <h3 className="text-lg font-medium text-gray-900">
+                    {activeTab === 'work-orders' ? item.title : 
+                     activeTab === 'providers' ? item.name : 
+                     item.description}
+                  </h3>
                   <p className="text-sm text-gray-500">
                     {activeTab === 'work-orders' ? `Prioridad: ${getPriorityText(item.priority)}` : 
                      activeTab === 'providers' ? item.contact_person : 
@@ -317,7 +442,11 @@ const Maintenance = () => {
             </div>
             
             <div className="space-y-2 text-sm text-gray-600">
-              <p className="text-gray-900">{item.description}</p>
+              <p className="text-gray-900">
+                {activeTab === 'work-orders' ? item.description : 
+                 activeTab === 'providers' ? item.specialties || 'Sin especialidades' : 
+                 item.description}
+              </p>
               
               {activeTab === 'work-orders' && (
                 <>
@@ -343,6 +472,10 @@ const Maintenance = () => {
               {activeTab === 'providers' && (
                 <>
                   <div className="flex justify-between">
+                    <span>Categoría:</span>
+                    <span className="capitalize">{item.category}</span>
+                  </div>
+                  <div className="flex justify-between">
                     <span>Contacto:</span>
                     <span>{item.contact_person}</span>
                   </div>
@@ -354,6 +487,12 @@ const Maintenance = () => {
                     <span>Email:</span>
                     <span>{item.email}</span>
                   </div>
+                  {item.services && (
+                    <div className="flex justify-between">
+                      <span>Servicios:</span>
+                      <span className="text-xs">{item.services.substring(0, 30)}...</span>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -361,11 +500,19 @@ const Maintenance = () => {
                 <>
                   <div className="flex justify-between">
                     <span>Monto:</span>
-                    <span className="font-medium">${item.amount}</span>
+                    <span className="font-medium">${item.total_amount}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Tipo:</span>
                     <span>{item.cost_type}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Orden:</span>
+                    <span>{item.work_order_title || 'Sin orden'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Cantidad:</span>
+                    <span>{item.quantity}</span>
                   </div>
                 </>
               )}
@@ -428,10 +575,14 @@ const Maintenance = () => {
                           onChange={(e) => setFormData({...formData, status: e.target.value})}
                           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         >
-                          <option value="pending">Pendiente</option>
+                          <option value="open">Abierta</option>
+                          <option value="assigned">Asignada</option>
                           <option value="in_progress">En Progreso</option>
+                          <option value="pending_parts">Pendiente Repuestos</option>
+                          <option value="pending_approval">Pendiente Aprobación</option>
                           <option value="completed">Completada</option>
                           <option value="cancelled">Cancelada</option>
+                          <option value="closed">Cerrada</option>
                         </select>
                       </div>
                     </div>
@@ -500,11 +651,63 @@ const Maintenance = () => {
                         className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Categoría</label>
+                      <select
+                        value={formData.category}
+                        onChange={(e) => setFormData({...formData, category: e.target.value})}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="electrical">Eléctrico</option>
+                        <option value="plumbing">Plomería</option>
+                        <option value="cleaning">Limpieza</option>
+                        <option value="security">Seguridad</option>
+                        <option value="maintenance">Mantenimiento</option>
+                        <option value="construction">Construcción</option>
+                        <option value="landscaping">Jardinería</option>
+                        <option value="other">Otro</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Servicios</label>
+                      <textarea
+                        value={formData.services}
+                        onChange={(e) => setFormData({...formData, services: e.target.value})}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        rows="2"
+                        placeholder="Lista de servicios que ofrece el proveedor"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Notas</label>
+                      <textarea
+                        value={formData.notes}
+                        onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        rows="2"
+                        placeholder="Notas adicionales sobre el proveedor"
+                      />
+                    </div>
                   </>
                 )}
 
                 {activeTab === 'costs' && (
                   <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Orden de Trabajo</label>
+                      <select
+                        value={formData.work_order}
+                        onChange={(e) => setFormData({...formData, work_order: e.target.value})}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Seleccionar orden de trabajo</option>
+                        {workOrders.map(wo => (
+                          <option key={wo.id} value={wo.id}>
+                            {wo.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700">Monto</label>
@@ -526,7 +729,8 @@ const Maintenance = () => {
                         >
                           <option value="labor">Mano de Obra</option>
                           <option value="materials">Materiales</option>
-                          <option value="equipment">Equipos</option>
+                          <option value="parts">Repuestos</option>
+                          <option value="transport">Transporte</option>
                           <option value="other">Otros</option>
                         </select>
                       </div>

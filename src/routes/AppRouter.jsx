@@ -40,7 +40,8 @@ import MaintenanceDashboard from '../pages/maintenance/MaintenanceDashboard';
 
 // Security pages
 import Security from '../pages/security/Security';
-import Authorizations from '../pages/security/Authorizations';
+import Visitors from '../pages/security/Visitors';
+import AccessAuthorizations from '../pages/security/AccessAuthorizations';
 import Events from '../pages/security/Events';
 import Incidents from '../pages/security/Incidents';
 import SecurityDashboard from '../pages/security/SecurityDashboard';
@@ -165,14 +166,14 @@ const AppRouter = () => {
           <Route path="/security/visitors" element={
             <ProtectedRoute>
               <Layout>
-                <Security />
+                <Visitors />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/security/authorizations" element={
             <ProtectedRoute>
               <Layout>
-                <Authorizations />
+                <AccessAuthorizations />
               </Layout>
             </ProtectedRoute>
           } />

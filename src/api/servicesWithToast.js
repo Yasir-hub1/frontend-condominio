@@ -37,6 +37,9 @@ export const userService = {
   changePassword: withToast(services.userService.changePassword, 'Contraseña actualizada exitosamente', 'Error al cambiar contraseña')
 };
 
+// Accounts Service (alias for userService for backward compatibility)
+export const accountsService = userService;
+
 // Units Management Services with Toast
 export const unitsService = {
   // Towers
