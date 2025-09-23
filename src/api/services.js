@@ -328,48 +328,28 @@ export const noticesService = {
 
 // Reports Services
 export const reportsService = {
-  // Finance Reports
-  getAgingDebt: (params) => api.get('/reports/finance/aging_debt/', { params }),
-  getCollectionRate: (params) => api.get('/reports/finance/collection_rate/', { params }),
-  getTopDebtors: (params) => api.get('/reports/finance/top_debtors/', { params }),
+  // Dashboard KPIs
+  getDashboardKPIs: () => api.get('/dashboard_kpis/'),
+  
+  // Financial Reports
+  getAgingDebt: (params) => api.get('/aging_debt/', { params }),
+  getCollectionRate: (params) => api.get('/collection_rate/', { params }),
   
   // Security Reports
-  getAccessStatistics: (params) => api.get('/reports/security/access_statistics/', { params }),
-  getIncidentSummary: (params) => api.get('/reports/security/incident_summary/', { params }),
+  getAccessStatistics: (params) => api.get('/access_statistics/', { params }),
   
   // Amenities Reports
-  getUsageStatistics: (params) => api.get('/reports/amenities/usage_statistics/', { params }),
-  getOccupancyRate: (params) => api.get('/reports/amenities/occupancy_rate/', { params }),
+  getAmenitiesUsage: (params) => api.get('/amenities_usage/', { params }),
   
   // Maintenance Reports
-  getPreventiveCompliance: (params) => api.get('/reports/maintenance/preventive_compliance/', { params }),
-  getCostAnalysis: (params) => api.get('/reports/maintenance/cost_analysis/', { params }),
+  getMaintenanceSummary: (params) => api.get('/maintenance_summary/', { params }),
   
-  // Dashboard Reports
-  getDashboardOverview: () => api.get('/reports/dashboard/overview/'),
-  
-  // Reports - Dashboard KPIs
-  getDashboardKPIs: () => api.get('/reports/reports/dashboard_kpis/'),
-  
-  // Reports - Financial
-  getAgingDebt: (params) => api.get('/reports/reports/aging_debt/', { params }),
-  getCollectionRate: (params) => api.get('/reports/reports/collection_rate/', { params }),
-  
-  // Reports - Security
-  getAccessStatistics: (params) => api.get('/reports/reports/access_statistics/', { params }),
-  
-  // Reports - Amenities
-  getAmenitiesUsage: (params) => api.get('/reports/reports/amenities_usage/', { params }),
-  
-  // Reports - Maintenance
-  getMaintenanceSummary: (params) => api.get('/reports/reports/maintenance_summary/', { params }),
-  
-  // Reports - Export
-  exportReport: (params) => api.get('/reports/reports/export_report/', { params }),
+  // Export Reports
+  exportReport: (params) => api.get('/export_report/', { params }),
   
   // Legacy reports (for backward compatibility)
-  getFinanceMorosity: (params) => api.get('/reports/reports/aging_debt/', { params }),
-  getAccessTrends: (params) => api.get('/reports/reports/access_statistics/', { params })
+  getFinanceMorosity: (params) => api.get('/aging_debt/', { params }),
+  getAccessTrends: (params) => api.get('/access_statistics/', { params })
 };
 
 // Dashboard Services

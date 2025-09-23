@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { reportsService } from '../../api/servicesWithToast';
 import { usePermissions } from '../../hooks/usePermissions';
 import PermissionGate from '../../components/PermissionGate';
+import { toast } from 'react-hot-toast';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -34,8 +35,10 @@ const ReportsDashboard = () => {
       setLoading(true);
       const response = await reportsService.getDashboardKPIs();
       setKpis(response.data);
+      console.log('KPIs loaded:', response.data);
     } catch (error) {
       console.error('Error fetching KPIs:', error);
+      toast.error('Error al cargar los KPIs del dashboard');
     } finally {
       setLoading(false);
     }
@@ -207,11 +210,34 @@ const ReportsDashboard = () => {
         end_date: new Date().toISOString().split('T')[0]
       };
       
-      const response = await reportsService[endpoint](params);
+      let response;
+      switch (endpoint) {
+        case 'aging_debt':
+          response = await reportsService.getAgingDebt(params);
+          break;
+        case 'collection_rate':
+          response = await reportsService.getCollectionRate(params);
+          break;
+        case 'access_statistics':
+          response = await reportsService.getAccessStatistics(params);
+          break;
+        case 'amenities_usage':
+          response = await reportsService.getAmenitiesUsage(params);
+          break;
+        case 'maintenance_summary':
+          response = await reportsService.getMaintenanceSummary(params);
+          break;
+        default:
+          console.error('Unknown endpoint:', endpoint);
+          return;
+      }
+      
       console.log(`${reportName} report:`, response.data);
+      toast.success(`Reporte ${reportName} generado exitosamente`);
       // Aquí podrías mostrar el reporte en un modal o nueva página
     } catch (error) {
       console.error(`Error generating ${reportName} report:`, error);
+      toast.error(`Error al generar el reporte ${reportName}`);
     } finally {
       setLoading(false);
     }
@@ -223,14 +249,26 @@ const ReportsDashboard = () => {
       const params = {
         start_date: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0],
         end_date: new Date().toISOString().split('T')[0],
+        report_type: endpoint,
         format: 'csv'
       };
       
       const response = await reportsService.exportReport(params);
-      // Aquí podrías descargar el archivo CSV
-      console.log(`${reportName} CSV:`, response.data);
+      // Crear y descargar archivo CSV
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${reportName}_${params.start_date}_${params.end_date}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      console.log(`${reportName} CSV exported successfully`);
+      toast.success(`Reporte ${reportName} exportado exitosamente`);
     } catch (error) {
       console.error(`Error exporting ${reportName} report:`, error);
+      toast.error(`Error al exportar el reporte ${reportName}`);
     } finally {
       setLoading(false);
     }
@@ -254,6 +292,18 @@ const ReportsDashboard = () => {
         </div>
         <div className="flex space-x-3">
           <button 
+            onClick={fetchKPIs}
+            disabled={loading}
+            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center disabled:opacity-50"
+          >
+            {loading ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+            ) : (
+              <Activity className="h-5 w-5 mr-2" />
+            )}
+            Actualizar KPIs
+          </button>
+          <button 
             onClick={() => navigate('/reports')}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
           >
@@ -264,7 +314,7 @@ const ReportsDashboard = () => {
       </div>
 
       {/* General KPIs */}
-      {kpis?.general && (
+      {kpis?.general ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
@@ -312,6 +362,15 @@ const ReportsDashboard = () => {
                 <p className="text-3xl font-bold text-purple-600">{kpis.general.system_uptime || 0}%</p>
               </div>
             </div>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
+          <div className="flex items-center">
+            <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2" />
+            <p className="text-yellow-800">
+              No hay datos de KPIs disponibles. Haz clic en "Actualizar KPIs" para cargar los datos.
+            </p>
           </div>
         </div>
       )}
