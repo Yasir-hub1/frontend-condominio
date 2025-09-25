@@ -288,6 +288,24 @@ export const securityService = {
   updateSecurityIncident: withToast(services.securityService.updateSecurityIncident, 'Incidente actualizado exitosamente', 'Error al actualizar incidente'),
   deleteSecurityIncident: withToast(services.securityService.deleteSecurityIncident, 'Incidente eliminado exitosamente', 'Error al eliminar incidente'),
   
+  // Face Recognition
+  getFaceEncodings: services.securityService.getFaceEncodings,
+  getFaceEncoding: services.securityService.getFaceEncoding,
+  createFaceEncoding: withToast(services.securityService.createFaceEncoding, 'Codificación facial creada exitosamente', 'Error al crear codificación facial'),
+  updateFaceEncoding: withToast(services.securityService.updateFaceEncoding, 'Codificación facial actualizada exitosamente', 'Error al actualizar codificación facial'),
+  deleteFaceEncoding: withToast(services.securityService.deleteFaceEncoding, 'Codificación facial eliminada exitosamente', 'Error al eliminar codificación facial'),
+  registerFace: withToast(services.securityService.registerFace, 'Rostro registrado exitosamente', 'Error al registrar rostro'),
+  recognizeVisitor: services.securityService.recognizeVisitor,
+  
+  // Attendance
+  getAttendance: services.securityService.getAttendance,
+  getAttendanceRecord: services.securityService.getAttendanceRecord,
+  createAttendance: withToast(services.securityService.createAttendance, 'Asistencia registrada exitosamente', 'Error al registrar asistencia'),
+  updateAttendance: withToast(services.securityService.updateAttendance, 'Asistencia actualizada exitosamente', 'Error al actualizar asistencia'),
+  deleteAttendance: withToast(services.securityService.deleteAttendance, 'Asistencia eliminada exitosamente', 'Error al eliminar asistencia'),
+  recordAttendance: withToast(services.securityService.recordAttendance, 'Asistencia registrada exitosamente', 'Error al registrar asistencia'),
+  getTodayAttendance: services.securityService.getTodayAttendance,
+  
   // Legacy faces (for backward compatibility)
   getFaces: services.securityService.getFaces,
   getFace: services.securityService.getFace,

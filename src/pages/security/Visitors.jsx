@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { securityService } from '../../api/servicesWithToast';
 import { Plus, Search, Edit, Trash2, Eye, User, Phone, Mail, Calendar, FileText, Camera } from 'lucide-react';
 import FaceRecognitionCamera from '../../components/FaceRecognitionCamera';
+import toast from 'react-hot-toast';
 
 const Visitors = () => {
   const navigate = useNavigate();
@@ -83,8 +84,10 @@ const Visitors = () => {
       let visitorResponse;
       if (editingVisitor) {
         visitorResponse = await securityService.updateVisitor(editingVisitor.id, submitData);
+        toast.success('Visitante actualizado exitosamente');
       } else {
         visitorResponse = await securityService.createVisitor(submitData);
+        toast.success('Visitante creado exitosamente');
       }
       
       // Si se subió una foto, registrar la codificación facial
@@ -112,13 +115,16 @@ const Visitors = () => {
         console.log('ℹ️ No se registró codificación facial - no hay foto o respuesta inválida');
       }
       
-      fetchData();
+      // Actualizar la lista y cerrar modal
+      await fetchData();
       setShowModal(false);
       setEditingVisitor(null);
       resetForm();
+      
     } catch (error) {
       console.error('Error saving visitor:', error);
       console.error('Error response:', error.response?.data);
+      toast.error(`Error: ${error.response?.data?.error || error.message}`);
     }
   };
 
@@ -131,7 +137,7 @@ const Visitors = () => {
       document_number: visitor.document_number || '',
       phone: visitor.phone || '',
       email: visitor.email || '',
-      photo: null, // Siempre null para edición, no mantener foto existente
+      photo: null, // Nueva foto (opcional)
       is_blacklisted: visitor.is_blacklisted || false,
       notes: visitor.notes || ''
     });
@@ -142,9 +148,11 @@ const Visitors = () => {
     if (window.confirm('¿Está seguro de que desea eliminar este visitante?')) {
       try {
         await securityService.deleteVisitor(id);
-        fetchData();
+        toast.success('Visitante eliminado exitosamente');
+        await fetchData();
       } catch (error) {
         console.error('Error deleting visitor:', error);
+        toast.error(`Error eliminando visitante: ${error.response?.data?.error || error.message}`);
       }
     }
   };
