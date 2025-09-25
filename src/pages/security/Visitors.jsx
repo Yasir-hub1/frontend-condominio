@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { securityService } from '../../api/servicesWithToast';
-import { Plus, Search, Edit, Trash2, Eye, User, Phone, Mail, Calendar, FileText } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, User, Phone, Mail, Calendar, FileText, Camera } from 'lucide-react';
+import FaceRecognitionCamera from '../../components/FaceRecognitionCamera';
 
 const Visitors = () => {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ const Visitors = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingVisitor, setEditingVisitor] = useState(null);
+  const [showCamera, setShowCamera] = useState(false);
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -78,10 +80,36 @@ const Visitors = () => {
         console.log(`${key}:`, value);
       }
 
+      let visitorResponse;
       if (editingVisitor) {
-        await securityService.updateVisitor(editingVisitor.id, submitData);
+        visitorResponse = await securityService.updateVisitor(editingVisitor.id, submitData);
       } else {
-        await securityService.createVisitor(submitData);
+        visitorResponse = await securityService.createVisitor(submitData);
+      }
+      
+      // Si se subió una foto, registrar la codificación facial
+      if (formData.photo && visitorResponse.data) {
+        try {
+          const visitorId = visitorResponse.data.id;
+          console.log('🔍 Registrando codificación facial para visitante ID:', visitorId);
+          
+          const imageData = await convertFileToBase64(formData.photo);
+          console.log('📸 Imagen convertida a base64, tamaño:', imageData.length);
+          
+          const faceResponse = await securityService.registerFace({
+            visitor_id: visitorId,
+            image_data: imageData
+          });
+          
+          console.log('✅ Codificación facial registrada exitosamente:', faceResponse.data);
+          toast.success('Codificación facial registrada exitosamente');
+        } catch (faceError) {
+          console.error('❌ Error registrando codificación facial:', faceError);
+          console.error('Error response:', faceError.response?.data);
+          toast.error(`Error registrando codificación facial: ${faceError.response?.data?.error || faceError.message}`);
+        }
+      } else {
+        console.log('ℹ️ No se registró codificación facial - no hay foto o respuesta inválida');
       }
       
       fetchData();
@@ -135,6 +163,38 @@ const Visitors = () => {
     });
   };
 
+  const handleCameraCapture = (imageData) => {
+    // Convertir base64 a File
+    const byteCharacters = atob(imageData.split(',')[1]);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'image/jpeg' });
+    const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
+    
+    setFormData(prev => ({
+      ...prev,
+      photo: file
+    }));
+    
+    setShowCamera(false);
+  };
+
+  const handleStartCamera = () => {
+    setShowCamera(true);
+  };
+
+  const convertFileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+      reader.readAsDataURL(file);
+    });
+  };
+
   const filteredVisitors = visitors.filter(visitor => {
     const matchesSearch = visitor.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          visitor.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -185,7 +245,7 @@ const Visitors = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
@@ -206,6 +266,19 @@ const Visitors = () => {
               <p className="text-sm font-medium text-gray-600">Activos</p>
               <p className="text-2xl font-bold text-gray-900">
                 {visitors.filter(v => !v.is_blacklisted).length}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Camera className="h-6 w-6 text-purple-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Con Reconocimiento</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {visitors.filter(v => v.photo_url).length}
               </p>
             </div>
           </div>
@@ -312,6 +385,14 @@ const Visitors = () => {
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">
                           {visitor.first_name} {visitor.last_name}
+                        </div>
+                        <div className="flex items-center mt-1">
+                          {visitor.photo_url && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <Camera className="h-3 w-3 mr-1" />
+                              Reconocimiento
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -458,7 +539,7 @@ const Visitors = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    {editingVisitor ? 'Nueva Foto (opcional)' : 'Foto'}
+                    {editingVisitor ? 'Nueva Foto (opcional)' : 'Foto para Reconocimiento Facial'}
                   </label>
                   
                   {/* Mostrar foto existente si está editando */}
@@ -472,32 +553,81 @@ const Visitors = () => {
                       />
                     </div>
                   )}
+
+                  {/* Mostrar foto seleccionada/capturada */}
+                  {formData.photo && (
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-600 mb-2">Foto seleccionada:</p>
+                      <div className="flex items-center space-x-3">
+                        <img
+                          src={URL.createObjectURL(formData.photo)}
+                          alt="Foto seleccionada"
+                          className="h-20 w-20 object-cover rounded-lg border"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({...prev, photo: null}))}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >
+                          Eliminar foto
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/gif"
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      console.log('=== ARCHIVO SELECCIONADO ===');
-                      console.log('Archivo:', file);
-                      console.log('Es File:', file instanceof File);
-                      
-                      if (file) {
-                        console.log('✅ Archivo válido, actualizando estado');
-                        setFormData(prev => {
-                          const newData = {...prev, photo: file};
-                          console.log('Nuevo estado:', newData);
-                          return newData;
-                        });
-                      } else {
-                        console.log('❌ No hay archivo seleccionado');
-                        setFormData(prev => ({...prev, photo: null}));
-                      }
-                    }}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Formatos permitidos: JPG, PNG, GIF (máximo 5MB)
+                  {/* Opciones para capturar/subir foto */}
+                  <div className="space-y-3">
+                    {/* Botón para tomar foto con cámara */}
+                    <button
+                      type="button"
+                      onClick={handleStartCamera}
+                      className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <Camera className="h-5 w-5 mr-2" />
+                      Tomar Foto con Cámara
+                    </button>
+
+                    {/* Separador */}
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-300" />
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-white text-gray-500">o</span>
+                      </div>
+                    </div>
+
+                    {/* Input para subir archivo */}
+                    <div>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/gif"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          console.log('=== ARCHIVO SELECCIONADO ===');
+                          console.log('Archivo:', file);
+                          console.log('Es File:', file instanceof File);
+                          
+                          if (file) {
+                            console.log('✅ Archivo válido, actualizando estado');
+                            setFormData(prev => {
+                              const newData = {...prev, photo: file};
+                              console.log('Nuevo estado:', newData);
+                              return newData;
+                            });
+                          } else {
+                            console.log('❌ No hay archivo seleccionado');
+                            setFormData(prev => ({...prev, photo: null}));
+                          }
+                        }}
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      />
+                    </div>
+                  </div>
+                  
+                  <p className="text-xs text-gray-500 mt-2">
+                    <strong>Importante:</strong> La foto se utilizará para el reconocimiento facial. 
+                    Asegúrese de que el rostro esté bien iluminado y visible.
                   </p>
                 </div>
 
@@ -548,6 +678,13 @@ const Visitors = () => {
           </div>
         </div>
       )}
+
+      {/* Cámara de Reconocimiento Facial */}
+      <FaceRecognitionCamera
+        isOpen={showCamera}
+        onCapture={handleCameraCapture}
+        onClose={() => setShowCamera(false)}
+      />
     </div>
   );
 };

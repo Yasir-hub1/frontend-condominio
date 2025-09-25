@@ -299,6 +299,24 @@ export const securityService = {
   updateSecurityIncident: (id, data) => api.put(`/security-incidents/${id}/`, data),
   deleteSecurityIncident: (id) => api.delete(`/security-incidents/${id}/`),
   
+  // Face Recognition
+  getFaceEncodings: (params) => api.get('/face-encodings/', { params }),
+  getFaceEncoding: (id) => api.get(`/face-encodings/${id}/`),
+  createFaceEncoding: (data) => api.post('/face-encodings/', data),
+  updateFaceEncoding: (id, data) => api.put(`/face-encodings/${id}/`, data),
+  deleteFaceEncoding: (id) => api.delete(`/face-encodings/${id}/`),
+  registerFace: (data) => api.post('/face-encodings/register_face/', data),
+  recognizeVisitor: (data) => api.post('/face-encodings/recognize_visitor/', data),
+  
+  // Attendance
+  getAttendance: (params) => api.get('/attendance/', { params }),
+  getAttendanceRecord: (id) => api.get(`/attendance/${id}/`),
+  createAttendance: (data) => api.post('/attendance/', data),
+  updateAttendance: (id, data) => api.put(`/attendance/${id}/`, data),
+  deleteAttendance: (id) => api.delete(`/attendance/${id}/`),
+  recordAttendance: (data) => api.post('/attendance/record_attendance/', data),
+  getTodayAttendance: () => api.get('/attendance/today_attendance/'),
+  
   // Legacy faces (for backward compatibility)
   getFaces: (params) => api.get('/visitors/', { params }),
   getFace: (id) => api.get(`/visitors/${id}/`),
@@ -329,27 +347,47 @@ export const noticesService = {
 // Reports Services
 export const reportsService = {
   // Dashboard KPIs
-  getDashboardKPIs: () => api.get('/dashboard_kpis/'),
-  
+  getDashboardKPIs: () => api.get('/reports/dashboard_kpis/'),
+
+  // ========== REPORTES PRINCIPALES ==========
   // Financial Reports
-  getAgingDebt: (params) => api.get('/aging_debt/', { params }),
-  getCollectionRate: (params) => api.get('/collection_rate/', { params }),
-  
+  getAgingDebt: (params) => api.get('/reports/aging_debt/', { params }),
+  getCollectionRate: (params) => api.get('/reports/collection_rate/', { params }),
+
   // Security Reports
-  getAccessStatistics: (params) => api.get('/access_statistics/', { params }),
-  
+  getAccessStatistics: (params) => api.get('/reports/access_statistics/', { params }),
+
   // Amenities Reports
-  getAmenitiesUsage: (params) => api.get('/amenities_usage/', { params }),
-  
+  getAmenitiesUsage: (params) => api.get('/reports/amenities_usage/', { params }),
+
   // Maintenance Reports
-  getMaintenanceSummary: (params) => api.get('/maintenance_summary/', { params }),
-  
-  // Export Reports
-  exportReport: (params) => api.get('/export_report/', { params }),
-  
+  getMaintenanceSummary: (params) => api.get('/reports/maintenance_summary/', { params }),
+
+  // ========== REPORTES AVANZADOS ==========
+  getAdvancedFinancialAnalysis: (params) => api.get('/reports/advanced_financial_analysis/', { params }),
+  getSecurityDetailedReport: (params) => api.get('/reports/security_detailed_report/', { params }),
+  getAmenitiesUtilizationAnalysis: (params) => api.get('/reports/amenities_utilization_analysis/', { params }),
+
+  // ========== REPORTES DE ACCESO RÁPIDO ==========
+  getQuickFinancialSnapshot: () => api.get('/reports/quick_financial_snapshot/'),
+  getQuickSecuritySnapshot: () => api.get('/reports/quick_security_snapshot/'),
+  getQuickMaintenanceSnapshot: () => api.get('/reports/quick_maintenance_snapshot/'),
+  getQuickAmenitiesSnapshot: () => api.get('/reports/quick_amenities_snapshot/'),
+
+  // Export Reports - Retorna datos JSON para que el frontend haga el Excel
+  exportReport: (params) => {
+    return api.get('/reports/export_report/', {
+      params: {
+        report_type: params.report_type,
+        start_date: params.start_date,
+        end_date: params.end_date
+      }
+    });
+  },
+
   // Legacy reports (for backward compatibility)
-  getFinanceMorosity: (params) => api.get('/aging_debt/', { params }),
-  getAccessTrends: (params) => api.get('/access_statistics/', { params })
+  getFinanceMorosity: (params) => api.get('/reports/aging_debt/', { params }),
+  getAccessTrends: (params) => api.get('/reports/access_statistics/', { params })
 };
 
 // Dashboard Services

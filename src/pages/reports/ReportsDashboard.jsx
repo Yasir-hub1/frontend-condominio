@@ -4,6 +4,8 @@ import { reportsService } from '../../api/servicesWithToast';
 import { usePermissions } from '../../hooks/usePermissions';
 import PermissionGate from '../../components/PermissionGate';
 import { toast } from 'react-hot-toast';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -249,26 +251,46 @@ const ReportsDashboard = () => {
       const params = {
         start_date: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0],
         end_date: new Date().toISOString().split('T')[0],
-        report_type: endpoint,
-        format: 'csv'
+        report_type: endpoint
       };
-      
+
+      // Obtener datos del backend para exportación
       const response = await reportsService.exportReport(params);
-      // Crear y descargar archivo CSV
-      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `${reportName}_${params.start_date}_${params.end_date}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      console.log(`${reportName} CSV exported successfully`);
+      const exportData = response.data.data;
+
+      if (!exportData || (Array.isArray(exportData) && exportData.length === 0)) {
+        toast.error('No hay datos para exportar');
+        return;
+      }
+
+      console.log(`🔄 Exportando ${reportName} con datos:`, exportData);
+
+      // Crear workbook de Excel
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      XLSX.utils.book_append_sheet(wb, ws, 'Reporte');
+
+      // Generar archivo Excel
+      const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([excelBuffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+
+      // Generar nombre de archivo limpio
+      const cleanReportName = reportName.replace(/[^a-zA-Z0-9]/g, '_');
+      const timestamp = new Date().toISOString().split('T')[0];
+      const fileName = `${cleanReportName}_${timestamp}.xlsx`;
+
+      // Descargar archivo
+      saveAs(blob, fileName);
+
+      console.log(`✅ ${reportName} Excel exportado: ${fileName}`);
       toast.success(`Reporte ${reportName} exportado exitosamente`);
+
     } catch (error) {
-      console.error(`Error exporting ${reportName} report:`, error);
-      toast.error(`Error al exportar el reporte ${reportName}`);
+      console.error(`❌ Error exporting ${reportName}:`, error);
+      const errorMsg = error.response?.data?.error || error.message || 'Error desconocido';
+      toast.error(`Error al exportar ${reportName}: ${errorMsg}`);
     } finally {
       setLoading(false);
     }
@@ -303,13 +325,23 @@ const ReportsDashboard = () => {
             )}
             Actualizar KPIs
           </button>
-          <button 
-            onClick={() => navigate('/reports')}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
-          >
-            <Filter className="h-5 w-5 mr-2" />
-            Reportes Avanzados
-          </button>
+          <div className="flex space-x-3">
+            <button
+              onClick={() => navigate('/reports/quick')}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center"
+            >
+              <Activity className="h-5 w-5 mr-2" />
+              Snapshots
+            </button>
+            <button
+              onClick={() => navigate('/reports/advanced')}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+            >
+              <Filter className="h-5 w-5 mr-2" />
+              Análisis Avanzado
+            </button>
+           
+          </div>
         </div>
       </div>
 
@@ -394,7 +426,7 @@ const ReportsDashboard = () => {
                     </div>
                   </div>
                   <button 
-                    onClick={() => navigate('/reports')}
+                    onClick={() => navigate('/reports/advanced')}
                     className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                   >
                     Ver Todos
@@ -472,33 +504,42 @@ const ReportsDashboard = () => {
       {/* Quick Actions */}
       <div className="bg-white shadow rounded-lg p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">Acciones Rápidas</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button 
-            onClick={() => navigate('/reports')}
-            className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left"
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <button
+            onClick={() => navigate('/reports/quick')}
+            className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left hover:border-green-300"
+          >
+            <Activity className="h-8 w-8 text-green-600 mb-2" />
+            <h4 className="font-medium text-gray-900">Snapshots Rápidos</h4>
+            <p className="text-sm text-gray-500">Vista rápida de todos los módulos</p>
+          </button>
+
+          <button
+            onClick={() => navigate('/reports/advanced')}
+            className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left hover:border-blue-300"
           >
             <BarChart3 className="h-8 w-8 text-blue-600 mb-2" />
-            <h4 className="font-medium text-gray-900">Reportes Personalizados</h4>
+            <h4 className="font-medium text-gray-900">Análisis Avanzado</h4>
+            <p className="text-sm text-gray-500">Análisis profundo con visualizaciones</p>
+          </button>
+
+          {/* <button
+            onClick={() => navigate('/reports/filters')}
+            className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left hover:border-purple-300"
+          >
+            <Download className="h-8 w-8 text-purple-600 mb-2" />
+            <h4 className="font-medium text-gray-900">Reportes con Filtros</h4>
             <p className="text-sm text-gray-500">Crea reportes con filtros específicos</p>
-          </button>
-          
-          <button 
-            onClick={() => navigate('/reports')}
-            className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left"
+          </button> */}
+
+          {/* <button
+            onClick={() => navigate('/reports/dashboard')}
+            className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left hover:border-orange-300"
           >
-            <Download className="h-8 w-8 text-green-600 mb-2" />
-            <h4 className="font-medium text-gray-900">Exportar Datos</h4>
-            <p className="text-sm text-gray-500">Exporta todos los datos del sistema</p>
-          </button>
-          
-          <button 
-            onClick={() => navigate('/reports')}
-            className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left"
-          >
-            <Activity className="h-8 w-8 text-purple-600 mb-2" />
+            <CheckCircle className="h-8 w-8 text-orange-600 mb-2" />
             <h4 className="font-medium text-gray-900">Dashboard Ejecutivo</h4>
             <p className="text-sm text-gray-500">Resumen general del condominio</p>
-          </button>
+          </button> */}
         </div>
       </div>
     </div>

@@ -44,6 +44,7 @@ import Visitors from '../pages/security/Visitors';
 import AccessAuthorizations from '../pages/security/AccessAuthorizations';
 import Events from '../pages/security/Events';
 import Incidents from '../pages/security/Incidents';
+import Attendance from '../pages/security/Attendance';
 import SecurityDashboard from '../pages/security/SecurityDashboard';
 
 // Notices pages
@@ -52,6 +53,9 @@ import Notices from '../pages/notices/Notices';
 // Reports pages
 import Reports from '../pages/reports/Reports';
 import ReportsDashboard from '../pages/reports/ReportsDashboard';
+import AdvancedReports from '../pages/reports/AdvancedReports';
+import QuickReports from '../pages/reports/QuickReports';
+import AdvancedAnalytics from '../pages/reports/AdvancedAnalytics';
 
 const AppRouter = () => {
   return (
@@ -191,6 +195,13 @@ const AppRouter = () => {
               </Layout>
             </ProtectedRoute>
           } />
+          <Route path="/security/attendance" element={
+            <ProtectedRoute>
+              <Layout>
+                <Attendance />
+              </Layout>
+            </ProtectedRoute>
+          } />
           
           <Route path="/amenities" element={
             <ProtectedRoute>
@@ -268,6 +279,34 @@ const AppRouter = () => {
             <ProtectedRoute>
               <Layout>
                 <ReportsDashboard />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/reports/dashboard" element={
+            <ProtectedRoute>
+              <Layout>
+                <ReportsDashboard />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/reports/advanced" element={
+            <ProtectedRoute>
+              <Layout>
+                <AdvancedAnalytics />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/reports/quick" element={
+            <ProtectedRoute>
+              <Layout>
+                <QuickReports />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/reports/filters" element={
+            <ProtectedRoute>
+              <Layout>
+                <AdvancedReports />
               </Layout>
             </ProtectedRoute>
           } />

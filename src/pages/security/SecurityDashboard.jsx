@@ -11,7 +11,9 @@ import {
   Eye,
   Plus,
   Search,
-  Filter
+  Filter,
+  Camera,
+  UserCheck
 } from 'lucide-react';
 
 const SecurityDashboard = () => {
@@ -137,6 +139,15 @@ const SecurityDashboard = () => {
             >
               <Plus className="h-5 w-5 mr-2" />
               Nueva Autorización
+            </button>
+          </PermissionGate>
+          <PermissionGate permission="add_visitor">
+            <button 
+              onClick={() => navigate('/security/attendance')}
+              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center"
+            >
+              <Camera className="h-5 w-5 mr-2" />
+              Registrar Asistencia
             </button>
           </PermissionGate>
         </div>
