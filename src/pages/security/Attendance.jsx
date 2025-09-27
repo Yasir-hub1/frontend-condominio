@@ -60,7 +60,7 @@ const Attendance = () => {
       });
 
       if (response.data) {
-        toast.success(`Asistencia registrada: ${response.data.attendance.visitor}`);
+        toast.success(`✅ Asistencia registrada: ${response.data.attendance.visitor}`);
         setSelectedVisitor(null);
         setCameraLocation('');
         setNotes('');
@@ -68,7 +68,20 @@ const Attendance = () => {
       }
     } catch (error) {
       console.error('Error recording attendance:', error);
-      toast.error(error.response?.data?.error || 'Error registrando asistencia');
+      const errorMessage = error.response?.data?.error || 'Error registrando asistencia';
+      
+      // Mostrar mensajes más específicos según el tipo de error
+      if (errorMessage.includes('ERROR DE IDENTIDAD') || errorMessage.includes('identidad')) {
+        toast.error('🚫 Error de identidad: La persona en la foto no coincide con el visitante seleccionado');
+      } else if (errorMessage.includes('No se pudo reconocer') || errorMessage.includes('verificar la identidad')) {
+        toast.error('🚫 Verificación fallida: La persona en la foto no es el visitante seleccionado');
+      } else if (errorMessage.includes('codificación facial')) {
+        toast.error('🚫 El visitante no tiene codificación facial registrada');
+      } else if (errorMessage.includes('Confianza insuficiente') || errorMessage.includes('RECHAZO')) {
+        toast.error('🚫 Verificación de seguridad fallida: La persona no coincide con el visitante registrado');
+      } else {
+        toast.error(`🚫 ${errorMessage}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -153,6 +166,57 @@ const Attendance = () => {
                 </option>
               ))}
             </select>
+            
+            {/* Información del visitante seleccionado */}
+            {selectedVisitor && (
+              <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center space-x-3">
+                  {selectedVisitor.photo_url ? (
+                    <img
+                      src={selectedVisitor.photo_url}
+                      alt={`${selectedVisitor.first_name} ${selectedVisitor.last_name}`}
+                      className="h-12 w-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded-full bg-gray-300 flex items-center justify-center">
+                      <span className="text-gray-600 text-lg">👤</span>
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">
+                      {selectedVisitor.first_name} {selectedVisitor.last_name}
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      {selectedVisitor.document_number}
+                    </p>
+                    <div className="flex items-center mt-1">
+                      {selectedVisitor.photo_url ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          ✅ Reconocimiento facial disponible
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          ❌ Sin reconocimiento facial
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-blue-700 bg-blue-50 p-2 rounded border border-blue-200">
+                  <strong>👤 DETECCIÓN DE ROSTROS:</strong> El sistema detectará automáticamente el rostro en la foto y extraerá solo las características faciales (sin ambiente/fondo).
+                  <br/><br/>
+                  <strong>🔍 PROCESO DE VERIFICACIÓN:</strong>
+                  <ul className="mt-1 ml-4 list-disc">
+                    <li>Detecta automáticamente el rostro en la imagen</li>
+                    <li>Extrae solo las características faciales (sin ambiente)</li>
+                    <li>Compara únicamente las características del rostro</li>
+                    <li>Rechaza si no es la persona correcta</li>
+                  </ul>
+                  <br/>
+                  <strong>✅ Solo se registrará asistencia si el rostro detectado corresponde a {selectedVisitor.first_name} {selectedVisitor.last_name}.</strong>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Ubicación de Cámara */}
@@ -191,7 +255,7 @@ const Attendance = () => {
               className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
             >
               <span className="mr-2">📥</span>
-              Registrar Entrada
+              {loading ? 'Verificando...' : 'Registrar Entrada'}
             </button>
             
             <button
@@ -200,8 +264,19 @@ const Attendance = () => {
               className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
             >
               <span className="mr-2">📤</span>
-              Registrar Salida
+              {loading ? 'Verificando...' : 'Registrar Salida'}
             </button>
+            
+            {loading && (
+              <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-600 mr-2"></div>
+                  <span className="text-sm text-yellow-800">
+                    🔒 Realizando verificaciones de seguridad...
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
